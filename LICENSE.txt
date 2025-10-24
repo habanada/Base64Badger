@@ -1,0 +1,21 @@
+Base64Badger - Image to Base64 Converter Tool
+Version: 1.2
+Author: Selahattin Erkoc (https://github.com/habanada)
+Year: 2025
+
+License: Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+https://creativecommons.org/licenses/by-nc/4.0/
+
+You are free to:
+- Share - copy and redistribute the material in any medium or format
+- Adapt - remix, transform, and build upon the material
+
+Under the following terms:
+- Attribution - You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+ (e.g. "Base64Badger by Selahattin Erkoc")
+- NonCommercial - You may not use the material for commercial purposes.
+
+No additional restrictions - You may not apply legal terms or technological measures that legally restrict others 
+from doing anything the license permits.
+
+ 2025 Selahattin Erkoc. All rights reserved.
