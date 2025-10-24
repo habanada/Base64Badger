@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/habanada/Base64Badger/refs/heads/main/base64badger.png" alt="Base64Badger Logo" width="300">
+</p>
 #  Base64Badger 
 ### Image ⇄ Base64 Converter Tool
 
