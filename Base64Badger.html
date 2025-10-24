@@ -1,0 +1,706 @@
+<!--
+  Base64Badger - Image to Base64 Converter Tool
+  Version: 1.2
+  Author: Selahattin Erkoc (https://github.com/habanada)
+  Year: 2025
+
+  License: Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+  https://creativecommons.org/licenses/by-nc/4.0/
+
+  You are free to use, share, and modify this software for non-commercial purposes only.
+  Commercial use requires explicit permission from the author.
+  Attribution is required: mention "Base64Badger by Selahattin Erkoc" (based on ByteBadger).
+  
+  © 2025 Selahattin Erkoc. All rights reserved.
+-->
+<!DOCTYPE html>
+<html lang="de"> <!-- Diese 'lang' wird per JS aktualisiert, 'dark' Klasse wird hier hinzugefügt -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64Badger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            visibility: hidden;
+        }
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            visibility: visible;
+        }
+        
+        /* Verbesserte Drag-Drop-Animation */
+        #drop-zone-icon {
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+        #drop-zone.dragging #drop-zone-icon {
+            transform: scale(1.15);
+            color: #3B82F6; /* Tailwind blue-500 */
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1.1); opacity: 1; }
+            50% { transform: scale(1.25); opacity: 0.7; }
+            100% { transform: scale(1.1); opacity: 1; }
+        }
+
+        /* Light mode Standard */
+        body {
+            background-color: #F9FAFB; /* gray-50 */
+            color: #1F2937; /* gray-800 */
+        }
+        
+        /* Dark mode Überschreibungen */
+        .dark body {
+            background-color: #111827; /* gray-900 */
+            color: #E5E7EB; /* gray-200 */
+        }
+        .dark .card {
+            background-color: #1F2937; /* gray-800 */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .dark .card-header, .dark .card-label {
+            color: #FFFFFF;
+        }
+        .dark .card-subheader, .dark .card-hint, .dark .card-placeholder {
+            color: #9CA3AF; /* gray-400 */
+        }
+        .dark .drop-zone {
+            border-color: #4B5563; /* gray-600 */
+        }
+        .dark .drop-zone:hover {
+            border-color: #3B82F6; /* blue-500 */
+            background-color: #374151; /* gray-700 */
+        }
+        .dark textarea {
+            background-color: #374151; /* gray-700 */
+            color: #E5E7EB; /* gray-200 */
+            border-color: #4B5563; /* gray-600 */
+        }
+        .dark select {
+            background-color: #374151; /* gray-700 */
+            color: #E5E7EB;
+        }
+        .dark .preview-bg {
+            background-color: #374151; /* gray-700 */
+        }
+        .dark .btn-secondary {
+            background-color: #4B5563; /* gray-600 */
+        }
+        .dark .btn-secondary:hover {
+            background-color: #374151; /* gray-700 */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="max-w-6xl w-full mx-auto p-4 sm:p-8">
+        
+        <!-- Header: Sprache und Theme -->
+        <div class="flex justify-end items-center mb-4 px-4 gap-4">
+            <select id="uiLang" class="bg-gray-200 text-gray-900 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Sprache auswählen">
+                <option value="de">🇩🇪 Deutsch</option>
+                <option value="en">🇬🇧 English</option>
+                <option value="tr">🇹🇷 Türkçe</option>
+            </select>
+            <button id="theme-toggle-btn" class="bg-gray-200 text-gray-900 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <!-- Sun Icon (Light Mode) -->
+                <svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 hidden">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-6.364-.386l1.591-1.591M3 12H.75m.386-6.364l1.591 1.591" />
+                </svg>
+                <!-- Moon Icon (Dark Mode) -->
+                <svg id="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 hidden">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                </svg>
+            </button>
+        </div>
+
+        <header class="text-center mb-10">
+            <!-- Logo-Platzhalter -->
+            <img src="base64badger.png" alt="Base64Badger Logo" class="mx-auto mb-4 rounded-lg dark:hidden">
+            <img src="base64badger.png" alt="Base64Badger Logo" class="mx-auto mb-4 rounded-lg hidden dark:block">
+            
+            <h1 id="uiTitle" class="text-3xl sm:text-4xl font-bold card-header">Bild zu Base64 Konverter</h1>
+            <p id="uiSubtitle" class="card-subheader mt-2">Lade ein Bild hoch, um es zu konvertieren, oder füge Base64 ein, um es zurückzuwandeln.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Sektion 1: Bild zu Base64 -->
+            <div class="card bg-white p-6 rounded-2xl shadow-lg flex flex-col">
+                <h2 id="uiSec1Title" class="text-2xl font-semibold card-header mb-5">1. Bild zu Base64</h2>
+                
+                <div id="drop-zone" role="button" tabindex="0" class="drop-zone border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 hover:bg-gray-100 transition-all duration-300 flex-grow flex flex-col justify-center items-center">
+                    <input type="file" id="file-input" class="hidden" accept="image/png, image/jpeg">
+                    
+                    <svg id="drop-zone-icon" class="w-12 h-12 text-gray-400 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l-3 3m3-3l3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                    </svg>
+                    
+                    <p id="uiDropP1" class="card-subheader mb-4">Datei hierher ziehen oder</p>
+                    <button id="upload-btn" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                        Datei auswählen
+                    </button>
+                    <p id="uiDropHint" class="card-hint text-xs mt-3">Nur JPG oder PNG (max. 5MB)</p>
+                </div>
+
+                <img id="image-preview" src="" alt="Bild-Vorschau" class="mt-6 rounded-lg max-h-48 w-auto mx-auto hidden">
+
+                <div class="mt-6">
+                    <label id="uiLabelOutput" for="base64-output" class="block text-sm font-medium card-label mb-2">Base64 HTML Tag:</label>
+                    <textarea id="base64-output" rows="6" class="w-full bg-gray-100 text-gray-800 p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" readonly placeholder="Dein &lt;img ...&gt; Tag erscheint hier..."></textarea>
+                </div>
+                
+                <div class="flex gap-4 mt-4">
+                    <button id="copy-btn" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a2.25 2.25 0 01-2.25 2.25h-3a2.25 2.25 0 01-2.25-2.25V5.25c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V7.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                        </svg>
+                        <span id="uiCopyBtnText">Kopieren</span>
+                    </button>
+                    <button id="clear-btn" class="btn-secondary flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12.578 0a48.108 48.108 0 013.478-.397m7.64 0L11.25 3.152a1.125 1.125 0 00-1.316-.385l-1.316.385a1.125 1.125 0 01-1.316-.385l-1.316.385A1.125 1.125 0 005.25 3.152l-1.316-.385m7.64 0l-3.376 6.891" />
+                        </svg>
+                        <span id="uiClearBtnText">Löschen</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sektion 2: Base64 zu Bild -->
+            <div class="card bg-white p-6 rounded-2xl shadow-lg flex flex-col">
+                <h2 id="uiSec2Title" class="text-2xl font-semibold card-header mb-5">2. Base64 zu Bild</h2>
+                
+                <div class="flex-grow flex flex-col">
+                    <label id="uiLabelInput" for="base64-input" class="block text-sm font-medium card-label mb-2">Base64-String oder &lt;img&gt;-Tag:</label>
+                    <textarea id="base64-input" rows="6" class="w-full bg-gray-100 text-gray-800 p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none flex-grow" placeholder="Füge deinen Base64-String hier ein..."></textarea>
+                </div>
+                
+                <button id="convert-btn" class="w-full bg-blue-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors mt-4">
+                    Konvertieren & Anzeigen
+                </button>
+
+                <div class="mt-6 text-center">
+                    <label id="uiLabelPreview" class="block text-sm font-medium card-label mb-2">Vorschau:</label>
+                    <div class="preview-bg w-full bg-gray-100 rounded-lg min-h-[100px] flex items-center justify-center p-4">
+                        <img id="image-output-preview" src="" alt="Base64-Vorschau" class="max-h-60 w-auto hidden rounded">
+                        <span id="preview-placeholder" class="card-placeholder text-gray-500">Vorschau erscheint hier</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 mt-4">
+                    <button id="download-png-btn" disabled class="btn-secondary flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                           <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        <span id="uiPngBtnText">Als PNG</span>
+                    </button>
+                    <button id="download-jpg-btn" disabled class="btn-secondary flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        <span id="uiJpgBtnText">Als JPG</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="bg-green-600 text-white py-2 px-5 rounded-lg shadow-lg">
+        <span id="toast-message"></span>
+    </div>
+
+    <script>
+        // ==== Sprachdaten (Embedded) ====
+        const EMBEDDED_STRINGS = {
+            de: {
+                title: "Bild zu Base64 Konverter",
+                subtitle: "Lade ein Bild hoch, um es zu konvertieren, oder füge Base64 ein, um es zurückzuwandeln.",
+                sec1_title: "1. Bild zu Base64",
+                drop_p1: "Datei hierher ziehen oder",
+                drop_btn: "Datei auswählen",
+                drop_hint: "Nur JPG oder PNG (max. 5MB)",
+                alt_preview1: "Bild-Vorschau",
+                label_output: "Base64 HTML Tag:",
+                placeholder_output: "Dein <img ...> Tag erscheint hier...",
+                btn_copy: "Kopieren",
+                btn_clear: "Löschen",
+                sec2_title: "2. Base64 zu Bild",
+                label_input: "Base64-String oder <img>-Tag:",
+                placeholder_input: "Füge deinen Base64-String hier ein...",
+                btn_convert: "Konvertieren & Anzeigen",
+                label_preview: "Vorschau:",
+                alt_preview2: "Base64-Vorschau",
+                placeholder_preview: "Vorschau erscheint hier",
+                btn_png: "Als PNG",
+                btn_jpg: "Als JPG",
+                toast_filetype: "Ungültiger Dateityp. Nur JPG/PNG.",
+                toast_filesize_limit: "Datei zu groß (max. 5MB).",
+                toast_nocopy: "Nichts zu kopieren.",
+                toast_copied: "In Zwischenablage kopiert!",
+                toast_copyfail: "Kopieren fehlgeschlagen.",
+                toast_nostring: "Bitte Base64-String einfügen.",
+                toast_nosrc: 'Konnte keinen "src"-String im <img>-Tag finden.',
+                toast_loadfail: "Fehler beim Laden des Bildes. Ungültiger String?",
+                toast_nodownload: "Keine Bildquelle zum Herunterladen.",
+                toast_downloadfail: "Download fehlgeschlagen.",
+                aria_toggle_theme: "Dark/Light Mode umschalten",
+                aria_drop_zone: "Bild hier ablegen oder klicken, um Upload-Dialog zu öffnen",
+                aria_output_field: "Ausgabefeld für Base64 HTML-Tag",
+                aria_input_field: "Eingabefeld für Base64-String",
+                aria_copy_btn: "Base64-Tag kopieren",
+                aria_clear_btn: "Ausgabe löschen",
+                aria_download_png: "Bild als PNG herunterladen",
+                aria_download_jpg: "Bild als JPG herunterladen"
+            },
+            en: {
+                title: "Image to Base64 Converter",
+                subtitle: "Upload an image to convert it, or paste Base64 to convert it back.",
+                sec1_title: "1. Image to Base64",
+                drop_p1: "Drag & drop file here or",
+                drop_btn: "Select File",
+                drop_hint: "Only JPG or PNG (max 5MB)",
+                alt_preview1: "Image Preview",
+                label_output: "Base64 HTML Tag:",
+                placeholder_output: "Your <img ...> tag will appear here...",
+                btn_copy: "Copy",
+                btn_clear: "Clear",
+                sec2_title: "2. Base64 to Image",
+                label_input: "Base64 String or <img> Tag:",
+                placeholder_input: "Paste your Base64 string here...",
+                btn_convert: "Convert & Display",
+                label_preview: "Preview:",
+                alt_preview2: "Base64 Preview",
+                placeholder_preview: "Preview appears here",
+                btn_png: "As PNG",
+                btn_jpg: "As JPG",
+                toast_filetype: "Invalid file type. Only JPG/PNG.",
+                toast_filesize_limit: "File too large (max 5MB).",
+                toast_nocopy: "Nothing to copy.",
+                toast_copied: "Copied to clipboard!",
+                toast_copyfail: "Copy failed.",
+                toast_nostring: "Please paste a Base64 string.",
+                toast_nosrc: 'Could not find "src" string in <img> tag.',
+                toast_loadfail: "Error loading image. Invalid string?",
+                toast_nodownload: "No image source to download.",
+                toast_downloadfail: "Download failed.",
+                aria_toggle_theme: "Toggle Dark/Light Mode",
+                aria_drop_zone: "Drop image here or click to open upload dialog",
+                aria_output_field: "Output field for Base64 HTML tag",
+                aria_input_field: "Input field for Base64 string",
+                aria_copy_btn: "Copy Base64 tag",
+                aria_clear_btn: "Clear output",
+                aria_download_png: "Download image as PNG",
+                aria_download_jpg: "Download image as JPG"
+            },
+            tr: {
+                title: "Resimden Base64'e Dönüştürücü",
+                subtitle: "Dönüştürmek için bir resim yükleyin veya geri dönüştürmek için Base64 yapıştırın.",
+                sec1_title: "1. Resimden Base64'e",
+                drop_p1: "Dosyayı buraya sürükleyin veya",
+                drop_btn: "Dosya Seç",
+                drop_hint: "Yalnızca JPG veya PNG (maks. 5MB)",
+                alt_preview1: "Resim Önizlemesi",
+                label_output: "Base64 HTML Etiketi:",
+                placeholder_output: "<img ...> etiketiniz burada görünecek...",
+                btn_copy: "Kopyala",
+                btn_clear: "Temizle",
+                sec2_title: "2. Base64'ten Resme",
+                label_input: "Base64 Dizesi veya <img> Etiketi:",
+                placeholder_input: "Base64 dizesini buraya yapıştırın...",
+                btn_convert: "Dönüştür ve Göster",
+                label_preview: "Önizleme:",
+                alt_preview2: "Base64 Önizlemesi",
+                placeholder_preview: "Önizleme burada görünür",
+                btn_png: "PNG olarak",
+                btn_jpg: "JPG olarak",
+                toast_filetype: "Geçersiz dosya türü. Yalnızca JPG/PNG.",
+                toast_filesize_limit: "Dosya çok büyük (maks. 5MB).",
+                toast_nocopy: "Kopyalanacak bir şey yok.",
+                toast_copied: "Panoya kopyalandı!",
+                toast_copyfail: "Kopyalama başarısız.",
+                toast_nostring: "Lütfen bir Base64 dizesi yapıştırın.",
+                toast_nosrc: '<img> etiketinde "src" dizesi bulunamadı.',
+                toast_loadfail: "Resim yüklenirken hata oluştu. Geçersiz dize mi?",
+                toast_nodownload: "İndirilecek resim kaynağı yok.",
+                toast_downloadfail: "İndirme başarısız.",
+                aria_toggle_theme: "Karanlık/Aydınlık Modu değiştir",
+                aria_drop_zone: "Resmi buraya bırakın veya yükleme penceresini açmak için tıklayın",
+                aria_output_field: "Base64 HTML etiketi için çıkış alanı",
+                aria_input_field: "Base64 dizesi için giriş alanı",
+                aria_copy_btn: "Base64 etiketini kopyala",
+                aria_clear_btn: "Çıktıyı temizle",
+                aria_download_png: "Resmi PNG olarak indir",
+                aria_download_jpg: "Resmi JPG olarak indir"
+            }
+        };
+        let STRINGS = {};
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+        let originalFileName = 'image'; // Store the original file name
+
+        function applyLanguage() {
+            document.getElementById('uiTitle').textContent = STRINGS.title;
+            document.getElementById('uiSubtitle').textContent = STRINGS.subtitle;
+            document.getElementById('uiSec1Title').textContent = STRINGS.sec1_title;
+            document.getElementById('uiDropP1').textContent = STRINGS.drop_p1;
+            document.getElementById('upload-btn').textContent = STRINGS.drop_btn;
+            document.getElementById('uiDropHint').textContent = STRINGS.drop_hint;
+            document.getElementById('image-preview').alt = STRINGS.alt_preview1;
+            document.getElementById('uiLabelOutput').textContent = STRINGS.label_output;
+            document.getElementById('base64-output').placeholder = STRINGS.placeholder_output;
+            document.getElementById('uiCopyBtnText').textContent = STRINGS.btn_copy;
+            document.getElementById('uiClearBtnText').textContent = STRINGS.btn_clear;
+            document.getElementById('uiSec2Title').textContent = STRINGS.sec2_title;
+            document.getElementById('uiLabelInput').textContent = STRINGS.label_input;
+            document.getElementById('base64-input').placeholder = STRINGS.placeholder_input;
+            document.getElementById('convert-btn').textContent = STRINGS.btn_convert;
+            document.getElementById('uiLabelPreview').textContent = STRINGS.label_preview;
+            document.getElementById('image-output-preview').alt = STRINGS.alt_preview2;
+            document.getElementById('preview-placeholder').textContent = STRINGS.placeholder_preview;
+            document.getElementById('uiPngBtnText').textContent = STRINGS.btn_png;
+            document.getElementById('uiJpgBtnText').textContent = STRINGS.btn_jpg;
+            
+            // A11y Labels
+            document.getElementById('theme-toggle-btn').setAttribute('aria-label', STRINGS.aria_toggle_theme);
+            document.getElementById('drop-zone').setAttribute('aria-label', STRINGS.aria_drop_zone);
+            document.getElementById('base64-output').setAttribute('aria-label', STRINGS.aria_output_field);
+            document.getElementById('base64-input').setAttribute('aria-label', STRINGS.aria_input_field);
+            document.getElementById('copy-btn').setAttribute('aria-label', STRINGS.aria_copy_btn);
+            document.getElementById('clear-btn').setAttribute('aria-label', STRINGS.aria_clear_btn);
+            document.getElementById('download-png-btn').setAttribute('aria-label', STRINGS.aria_download_png);
+            document.getElementById('download-jpg-btn').setAttribute('aria-label', STRINGS.aria_download_jpg);
+        }
+
+        function loadLanguage(lang) {
+            if (!EMBEDDED_STRINGS[lang]) {
+                lang = 'en'; // Fallback auf Englisch
+            }
+            STRINGS = EMBEDDED_STRINGS[lang];
+            document.documentElement.lang = lang; // Setzt <html lang="...">
+            applyLanguage();
+        }
+
+        function getInitialLang() {
+            const savedLang = localStorage.getItem('uiLang');
+            if (savedLang && EMBEDDED_STRINGS[savedLang]) {
+                return savedLang;
+            }
+            const browserLang = navigator.language.substring(0, 2);
+            if (EMBEDDED_STRINGS[browserLang]) {
+                return browserLang;
+            }
+            return 'de';
+        }
+
+        // --- Theme Logic ---
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        const themeIconSun = document.getElementById('theme-icon-sun');
+        const themeIconMoon = document.getElementById('theme-icon-moon');
+
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                themeIconSun.classList.remove('hidden');
+                themeIconMoon.classList.add('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                themeIconSun.classList.add('hidden');
+                themeIconMoon.classList.remove('hidden');
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        }
+
+        themeToggleBtn.addEventListener('click', toggleTheme);
+
+        function getInitialTheme() {
+            return localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropZone = document.getElementById('drop-zone');
+            const dropZoneIcon = document.getElementById('drop-zone-icon');
+            const fileInput = document.getElementById('file-input');
+            const uploadBtn = document.getElementById('upload-btn');
+            const imagePreview = document.getElementById('image-preview');
+            const base64Output = document.getElementById('base64-output');
+            const copyBtn = document.getElementById('copy-btn');
+            const clearBtn = document.getElementById('clear-btn');
+
+            const base64Input = document.getElementById('base64-input');
+            const convertBtn = document.getElementById('convert-btn');
+            const imageOutputPreview = document.getElementById('image-output-preview');
+            const previewPlaceholder = document.getElementById('preview-placeholder');
+            const downloadPngBtn = document.getElementById('download-png-btn');
+            const downloadJpgBtn = document.getElementById('download-jpg-btn');
+
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            
+            const uiLangSelect = document.getElementById('uiLang');
+
+            let toastTimeout;
+
+            function showToast(messageKey, type = 'success') {
+                clearTimeout(toastTimeout);
+                toastMessage.textContent = STRINGS[messageKey] || messageKey; 
+                toast.className = 'py-2 px-5 rounded-lg shadow-lg text-white'; 
+                if (type === 'success') {
+                    toast.classList.add('bg-green-600');
+                } else {
+                    toast.classList.add('bg-red-600');
+                }
+                toast.classList.add('show');
+                
+                toastTimeout = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+
+            uploadBtn.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    fileInput.click();
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-blue-500', 'bg-gray-100', 'dark:bg-gray-700', 'dragging');
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-blue-500', 'bg-gray-100', 'dark:bg-gray-700', 'dragging');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-blue-500', 'bg-gray-100', 'dark:bg-gray-700', 'dragging');
+                handleFiles(e.dataTransfer.files);
+            });
+
+            function handleFiles(files) {
+                if (files.length === 0) return;
+                
+                const file = files[0];
+                
+                // Verbesserte Dateityp- und Erweiterungsprüfung
+                const allowedTypes = ['image/jpeg', 'image/png'];
+                const allowedExtensions = ['.jpg', '.jpeg', '.png'];
+                const fileType = file.type;
+                const fileName = file.name.toLowerCase();
+                const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
+
+                if (!allowedTypes.includes(fileType) || !allowedExtensions.includes(fileExtension)) {
+                    showToast('toast_filetype', 'error');
+                    return;
+                }
+                
+                if (file.size > MAX_FILE_SIZE) {
+                    showToast('toast_filesize_limit', 'error');
+                    return;
+                }
+
+                // Dateinamen speichern (ohne Erweiterung)
+                originalFileName = file.name.substring(0, file.name.lastIndexOf('.')) || 'image';
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const base64String = e.target.result;
+                    imagePreview.src = base64String;
+                    imagePreview.classList.remove('hidden');
+                    base64Output.value = `<img src="${base64String}" alt="hochgeladenes-bild" />`;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            copyBtn.addEventListener('click', () => {
+                const textToCopy = base64Output.value;
+                if (!textToCopy) {
+                    showToast('toast_nocopy', 'error');
+                    return;
+                }
+
+                // Neue Clipboard API (bevorzugt)
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        showToast('toast_copied');
+                    }).catch(err => {
+                        // Fallback, falls Berechtigung fehlt oder in iFrame
+                        console.warn('Clipboard API failed, falling back:', err);
+                        fallbackCopy(textToCopy);
+                    });
+                } else {
+                    // Fallback für ältere Browser
+                    fallbackCopy(textToCopy);
+                }
+            });
+
+            // Fallback-Kopierfunktion
+            function fallbackCopy(text) {
+                try {
+                    base64Output.select();
+                    // document.execCommand('copy') wird hier bevorzugt, da navigator.clipboard in iFrames oft blockiert ist.
+                    document.execCommand('copy');
+                    showToast('toast_copied');
+                } catch (err) {
+                    showToast('toast_copyfail', 'error');
+                }
+                window.getSelection().removeAllRanges();
+            }
+
+            clearBtn.addEventListener('click', () => {
+                base64Output.value = '';
+                imagePreview.src = '';
+                imagePreview.classList.add('hidden');
+                fileInput.value = null;
+                originalFileName = 'image'; // Dateinamen zurücksetzen
+            });
+
+            convertBtn.addEventListener('click', () => {
+                let data = base64Input.value.trim();
+                if (!data) {
+                    showToast('toast_nostring', 'error');
+                    return;
+                }
+
+                let srcData = data;
+                
+                if (data.startsWith('<img')) {
+                    const match = data.match(/src="([^"]+)"/);
+                    if (match && match[1]) {
+                        srcData = match[1];
+                    } else {
+                        showToast('toast_nosrc', 'error');
+                        return;
+                    }
+                }
+                
+                if (!srcData.startsWith('data:image')) {
+                    if (srcData.startsWith('/9j/')) {
+                        srcData = 'data:image/jpeg;base64,' + srcData;
+                    } else {
+                        srcData = 'data:image/png;base64,' + srcData;
+                    }
+                }
+
+                try {
+                    imageOutputPreview.src = srcData;
+                    imageOutputPreview.classList.remove('hidden');
+                    previewPlaceholder.classList.add('hidden');
+                    
+                    downloadPngBtn.disabled = false;
+                    downloadJpgBtn.disabled = false;
+                    downloadPngBtn.classList.replace('bg-gray-500', 'bg-blue-600');
+                    downloadJpgBtn.classList.replace('bg-gray-500', 'bg-blue-600');
+                    
+                } catch (e) {
+                    showToast('toast_loadfail', 'error');
+                    resetConverter();
+                }
+            });
+            
+            imageOutputPreview.onerror = () => {
+                 showToast('toast_loadfail', 'error');
+                 resetConverter();
+            };
+            
+            function resetConverter() {
+                imageOutputPreview.classList.add('hidden');
+                previewPlaceholder.classList.remove('hidden');
+                downloadPngBtn.disabled = true;
+                downloadJpgBtn.disabled = true;
+                downloadPngBtn.classList.replace('bg-blue-600', 'bg-gray-500');
+                downloadJpgBtn.classList.replace('bg-blue-600', 'bg-gray-500');
+            }
+
+            downloadPngBtn.addEventListener('click', () => downloadImage('image/png'));
+            downloadJpgBtn.addEventListener('click', () => downloadImage('image/jpeg'));
+
+            function downloadImage(format) {
+                const img = imageOutputPreview;
+                if (!img.src || img.src.startsWith('http')) {
+                    showToast('toast_nodownload', 'error');
+                    return;
+                }
+
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    
+                    const ctx = canvas.getContext('2d');
+                    
+                    if (format === 'image/jpeg') {
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+                    
+                    ctx.drawImage(img, 0, 0);
+
+                    const dataUrl = canvas.toDataURL(format, 0.9);
+                    
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = 'export.' + (format === 'image/png' ? 'png' : 'jpg');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (e) {
+                    showToast('toast_downloadfail', 'error');
+                }
+            }
+
+            // --- Sprach- und Theme-Initialisierung ---
+            uiLangSelect.addEventListener('change', (e) => {
+                const newLang = e.target.value;
+                localStorage.setItem('uiLang', newLang);
+                loadLanguage(newLang);
+            });
+
+            const initialLang = getInitialLang();
+            uiLangSelect.value = initialLang;
+            loadLanguage(initialLang); 
+
+            const initialTheme = getInitialTheme();
+            applyTheme(initialTheme);
+
+            // NEU: Listener für System-Theme-Änderungen
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                // Nur anwenden, wenn der Benutzer keine manuelle Auswahl getroffen hat
+                if (!localStorage.getItem('theme')) {
+                    const newTheme = e.matches ? 'dark' : 'light';
+                    applyTheme(newTheme);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
