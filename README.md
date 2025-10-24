@@ -18,6 +18,11 @@ It runs entirely in the browser, stores nothing on a server, and can be used **o
 Built with **Vanilla JavaScript**, **Tailwind CSS**, and designed with full **accessibility (A11y)** in mind. 
 It is an enhanced successor of *ByteBadger*.
 
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/habanada/Base64Badger/refs/heads/main/screenshotBase64Badger.jpg" alt="Base64Badger Logo" width="300">
+</p>
+
 ---
 
 ##  Features
