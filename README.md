@@ -16,7 +16,6 @@
 It runs entirely in the browser, stores nothing on a server, and can be used **offline**. 
 
 Built with **Vanilla JavaScript**, **Tailwind CSS**, and designed with full **accessibility (A11y)** in mind. 
-It is an enhanced successor of *ByteBadger*.
 
 
 <p align="center">
